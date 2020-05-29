@@ -1,0 +1,31 @@
+version: 2
+notify:
+  webhooks:
+    # A list of hashes representing hooks. Only the url field is supported.
+    - url: http://production-reviewee-api.herokuapp.com/notification/ci
+jobs:
+  build:
+    working_directory: ~/ureact
+    docker:
+      - image: circleci/node:10.14.1
+    environment:
+      - APP_URL: http://production-reviewee-api.herokuapp.com
+      - COMMITS_CHECK_ENDPOINT: repository/ureact/haveRejectedCommits
+      - COMMITS_CHECK_INDICATOR: \"success\":true
+    steps:
+      - checkout
+      - run:
+          name: Check Rejected Commits
+          command: wget ${APP_URL}/${COMMITS_CHECK_ENDPOINT} -q -O - | grep -q ${COMMITS_CHECK_INDICATOR}
+      - run:
+          name: Install System Dependencies
+          command: sudo apt-get update -qq
+      - run:
+          name: Install Node dependencies
+          command: yarn install
+      - run:
+          name: Check linting
+          command: yarn lint
+      - run:
+          name: Run unit tests
+          command: yarn test --no-watch --passWithNoTests
